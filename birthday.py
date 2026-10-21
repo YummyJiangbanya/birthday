@@ -8,20 +8,21 @@ import html
 #  👇 个性化配置区：只改这里
 # ============================================================
 
-FRIEND_NAME = "小美"
-SENDER_NAME = "你的名字"
+FRIEND_NAME = "薛女士"
+SENDER_NAME = "贾女士"
+SUB_TITLE = "祝你轻盈地迈入一个又一个春天"
 
-LETTER = """亲爱的朋友：
+LETTER = """亲爱的薛女士：
 
 生日快乐！
 
 认识你是一件很幸运的事情。这一年里，我们一起……
 
-希望新的一岁里，你能每天都开心，想要的都能得到，想去的都能去到。
+希望你新的一岁里，每天都开心，想要的都能得到，想去的都能去到。
 
 无论什么时候，需要我的时候，我一直都在。
 
-                                        —— 你的好朋友
+                                        —— 贾女士
 """
 
 THOUGHTS = [
@@ -46,6 +47,228 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+
+# ============================================================
+#  🎆 全屏开场烟花（首次进入时播放一次，约 5 秒后淡出）
+# ============================================================
+OPENING_HTML = """
+<!DOCTYPE html>
+<html><head><style>html,body{margin:0;padding:0;overflow:hidden;}</style></head>
+<body>
+<script>
+(function(){
+  const parentDoc = window.parent.document;
+  // 防重复
+  const old = parentDoc.getElementById('bday-opening');
+  if (old) old.remove();
+
+  const overlay = parentDoc.createElement('div');
+  overlay.id = 'bday-opening';
+  overlay.style.cssText = [
+    'position:fixed','inset:0','z-index:2147483647',
+    'background:radial-gradient(circle at center, #1e1b3a 0%, #0d0a20 100%)',
+    'display:flex','align-items:center','justify-content:center',
+    'opacity:1','transition:opacity 1.1s ease',
+    'overflow:hidden'
+  ].join(';');
+
+  const canvas = parentDoc.createElement('canvas');
+  canvas.style.cssText = 'width:100%;height:100%;display:block;';
+  overlay.appendChild(canvas);
+  parentDoc.body.appendChild(overlay);
+
+  const ctx = canvas.getContext('2d');
+  let W = parentDoc.documentElement.clientWidth;
+  let H = parentDoc.documentElement.clientHeight;
+
+  function resize(){
+    const dpr = window.devicePixelRatio || 1;
+    W = parentDoc.documentElement.clientWidth;
+    H = parentDoc.documentElement.clientHeight;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ---------- 采样文字点 ----------
+  function getTextPoints(text){
+    const off = parentDoc.createElement('canvas');
+    off.width = W; off.height = H;
+    const octx = off.getContext('2d');
+    const fontSize = Math.min(W * 0.26, H * 0.42);
+    octx.fillStyle = '#fff';
+    octx.font = '900 ' + fontSize + "px 'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans SC',sans-serif";
+    octx.textAlign = 'center';
+    octx.textBaseline = 'middle';
+    octx.fillText(text, W / 2, H / 2);
+    const data = octx.getImageData(0, 0, W, H).data;
+    const pts = [];
+    const gap = 3;
+    for (let y = 0; y < H; y += gap){
+      for (let x = 0; x < W; x += gap){
+        const i = (y * W + x) * 4;
+        if (data[i + 3] > 128) pts.push({ x, y });
+      }
+    }
+    const maxPts = 1100;
+    if (pts.length > maxPts){
+      const step = pts.length / maxPts;
+      const out = [];
+      for (let i = 0; i < pts.length; i += step) out.push(pts[Math.floor(i)]);
+      return out;
+    }
+    return pts;
+  }
+
+  // ---------- 粒子系统 ----------
+  const particles = [];   // 用于爆炸火花
+  const textParticles = []; // 用于拼字
+  const gravity = 0.045;
+  const friction = 0.982;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  function explode(x, y){
+    const hue = Math.random() * 360;
+    const count = 80 + Math.floor(Math.random() * 60);
+    const power = rnd(3.2, 6.8);
+    for (let i = 0; i < count; i++){
+      const a = Math.random() * Math.PI * 2;
+      const s = power * Math.pow(Math.random(), 0.55);
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        life: 1,
+        decay: rnd(0.008, 0.02),
+        hue: hue + rnd(-30, 30),
+        size: rnd(1.4, 2.8)
+      });
+    }
+  }
+
+  // ---------- 时间线 ----------
+  const startTs = performance.now();
+  let textSpawned = false;
+  let fadeStarted = false;
+  let lastBurst = 0;
+
+  function loop(now){
+    const t = (now - startTs) / 1000;
+
+    // 背景
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(13, 10, 32, 0.20)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+
+    // ---------- 阶段 1：开场爆炸 ----------
+    if (t < 1.6){
+      if (!lastBurst || now - lastBurst > 320){
+        explode(rnd(W * 0.25, W * 0.75), rnd(H * 0.25, H * 0.45));
+        lastBurst = now;
+      }
+    }
+
+    // ---------- 阶段 2：生成目标文字粒子 ----------
+    if (!textSpawned && t >= 0.9){
+      textSpawned = true;
+      const pts = getTextPoints('20岁');
+      for (const p of pts){
+        // 初始位置：从屏幕中心附近的爆炸点出发
+        const angle = Math.random() * Math.PI * 2;
+        const dist  = rnd(0, 120);
+        textParticles.push({
+          x: W / 2 + Math.cos(angle) * dist,
+          y: H / 2 + Math.sin(angle) * dist,
+          vx: Math.cos(angle) * rnd(2, 6),
+          vy: Math.sin(angle) * rnd(2, 6),
+          tx: p.x,
+          ty: p.y,
+          hue: rnd(180, 340),
+          size: rnd(1.6, 2.6),
+          born: now
+        });
+      }
+    }
+
+    // ---------- 阶段 3：文字粒子被吸向目标 ----------
+    for (const p of textParticles){
+      p.vx += (p.tx - p.x) * 0.045;
+      p.vy += (p.ty - p.y) * 0.045;
+      p.vx *= 0.90;
+      p.vy *= 0.90;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      const flicker = 0.85 + Math.random() * 0.15;
+      ctx.beginPath();
+      ctx.fillStyle = 'hsla(' + p.hue + ', 100%, 75%, ' + (0.9 * flicker) + ')';
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 拖尾
+      ctx.beginPath();
+      ctx.fillStyle = 'hsla(' + p.hue + ', 100%, 75%, 0.25)';
+      ctx.arc(p.x - p.vx * 2, p.y - p.vy * 2, p.size * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 文字成型后，偶尔再补几发小烟花作为背景
+    if (t > 2.2 && t < 4.8 && now - lastBurst > 600){
+      explode(rnd(W * 0.15, W * 0.85), rnd(H * 0.15, H * 0.35));
+      lastBurst = now;
+    }
+
+    // ---------- 普通爆炸粒子更新 ----------
+    for (let i = particles.length - 1; i >= 0; i--){
+      const p = particles[i];
+      p.vx *= friction;
+      p.vy = p.vy * friction + gravity;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= p.decay;
+      if (p.life <= 0 || p.y > H + 40){ particles.splice(i, 1); continue; }
+      ctx.beginPath();
+      ctx.fillStyle = 'hsla(' + p.hue + ', 100%, ' + (55 + p.life * 25) + '%, ' + p.life + ')';
+      ctx.arc(p.x, p.y, Math.max(p.size * p.life, 0.5), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ---------- 阶段 4：5 秒后淡出 ----------
+    if (!fadeStarted && t >= 5.2){
+      fadeStarted = true;
+      overlay.style.opacity = '0';
+      setTimeout(function(){
+        if (overlay && overlay.parentNode) overlay.remove();
+      }, 1300);
+    }
+    if (fadeStarted && t >= 7.0){
+      if (overlay && overlay.parentNode) overlay.remove();
+      return;
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  // 等字体加载（系统字体很快）
+  requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
+"""
+
+if "opening_played" not in st.session_state:
+    st.session_state.opening_played = False
+if not st.session_state.opening_played:
+    components.html(OPENING_HTML, height=0)
+    st.session_state.opening_played = True
+
+
+# ============================================================
+#  🎨 全局样式（手绘风）
+# ============================================================
 GLOBAL_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&family=Ma+Shan+Zheng&display=swap');
@@ -367,7 +590,9 @@ iframe { border: none !important; }
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 
-# ---------------- 烟花（外包一层手绘相框）----------------
+# ============================================================
+#  🎇 顶部画框里的常驻烟花
+# ============================================================
 FIREWORKS_HTML = """
 <!DOCTYPE html>
 <html>
@@ -495,7 +720,9 @@ setInterval(launch, 750);
 """
 
 
-# ---------------- Hero ----------------
+# ============================================================
+#  ✨ Hero 区
+# ============================================================
 st.markdown(f'''
 <div class="hero">
     <h1 class="hero-title">
@@ -506,15 +733,19 @@ st.markdown(f'''
         <path d="M2,8 Q22,2 42,8 T82,8 T122,8 T162,8 T202,8 T242,8 T282,8 T322,8 T362,8 T402,8"
               stroke="#ff4d4d" stroke-width="3" fill="none" stroke-linecap="round"/>
     </svg>
-    <div><span class="hero-sub">愿你所愿皆成真，愿你所得皆欢喜 ✨</span></div>
+    <div><span class="hero-sub">{html.escape(SUB_TITLE)} ✨</span></div>
 </div>
 ''', unsafe_allow_html=True)
 
-# ---------------- 烟花 ----------------
+# ============================================================
+#  🎆 顶部画框烟花
+# ============================================================
 components.html(FIREWORKS_HTML, height=440, scrolling=False)
 
 
-# ---------------- 照片 base64 渲染 ----------------
+# ============================================================
+#  📷 照片 base64 渲染
+# ============================================================
 def photo_to_html(path, caption, rotation):
     with open(path, "rb") as f:
         data = base64.b64encode(f.read()).decode()
@@ -530,7 +761,9 @@ def photo_to_html(path, caption, rotation):
     )
 
 
-# ---------------- Tabs ----------------
+# ============================================================
+#  🗂️ Tabs
+# ============================================================
 tab1, tab2, tab3 = st.tabs(["✉️  写给你的信", "📸  我们的照片", "💭  一些心里话"])
 
 # --- 信 ---
@@ -595,7 +828,9 @@ with tab3:
         )
     st.markdown(f'<div class="thought-grid">{"".join(parts)}</div>', unsafe_allow_html=True)
 
-# ---------------- Footer ----------------
+# ============================================================
+#  🎁 Footer
+# ============================================================
 st.markdown(
     f'<div class="footer-note">—— <span>来自 {html.escape(SENDER_NAME)} 的一点小心意</span> 🎁</div>',
     unsafe_allow_html=True,
