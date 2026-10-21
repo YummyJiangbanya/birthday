@@ -21,7 +21,7 @@ LETTER = """亲爱的薛女士！
 
 时间过得真快呀，一转眼我们已经认识八年了！从“十二”到“二十”，似乎世界变了很多很多，但你在我眼里永远是那个我刚认识的样子。我的小大人，20岁生日快乐！
 
-这一年快要走到结尾，距离我们上一次见面也已经过去了255天，在线下见不到彼此的日子里，我们面对了很多艰难的时刻，而你更是让我看到了你是一个特别有勇气、特别坚定、认准什么事情都会不顾一切去做的女孩；同时随着我们越来越熟悉彼此，你也更愿意对我说曾经习惯于压下去的难过或者焦虑。虽然在某次聊天时说过，但在这里还是还是想和你说，不用因为一些偶尔的难过责怪自己的！
+这一年快要走到结尾，距离我们上一次见面也已经过去了255天，在线下见不到彼此的日子里，我们面对了很多艰难的时刻，而你更是让我看到了你是一个特别有勇气、特别坚定认准什么事情都会不顾一切去做的女孩；同时随着我们越来越熟悉彼此，你也更愿意对我说曾经习惯于压下去的难过或者焦虑。虽然在某次聊天时说过，但在这里还是还是想和你说，不用因为一些偶尔的难过责怪自己的！
 
 想来也有255天没回家了。虽然我一直一直告诉自己，很多事情我要学会独自面对，但很多时刻我还是会想，要是这时候身边有你该有多好，会不会在找不到小组组队的时候可以有人收留我（x），会不会能有人和我一起去吃饭......好想好想，好想好想你。
 
@@ -60,41 +60,54 @@ if "current_page" not in st.session_state:
 
 
 # ============================================================
-#  🎵 全局悬浮音频播放器（转Base64修复无法播放问题）
+#  🎵 全局悬浮音频播放器（原生播放 + JS 固定定位）
 # ============================================================
-def get_audio_base64():
-    audio_path = Path("audio.mp3")
-    if audio_path.exists():
-        with open(audio_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    return ""
+# 先渲染一个原生的 st.audio，前端加载后 JS 会将其固定到右上角
+if os.path.exists("audio.mp3"):
+    st.audio("audio.mp3", format="audio/mpeg", loop=True)
 
-AUDIO_B64 = get_audio_base64()
-
-if AUDIO_B64:
-    GLOBAL_AUDIO_HTML = f"""
-    <style>
-    .audio-player-container {{
-        position: fixed; top: 20px; right: 20px; z-index: 999999;
-        background: #ffffff; padding: 8px 12px;
-        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-        border: 2px solid #2d2d2d; box-shadow: 4px 4px 0px 0px #2d2d2d;
-        display: flex; align-items: center; gap: 10px; transform: rotate(1deg);
-    }}
-    .audio-player-container audio {{ height: 36px; outline: none; }}
-    @media (max-width: 768px) {{
-        .audio-player-container {{ top: 10px; right: 10px; transform: scale(0.8); transform-origin: top right; }}
-    }}
-    </style>
-    <div class="audio-player-container">
-        <span style="font-family:'Zen Maru Gothic', sans-serif; font-size:14px; color:#4ea8de; font-weight:bold;">🎵 BGM</span>
-        <audio controls loop id="bgm">
-            <source src="data:audio/mp3;base64,{AUDIO_B64}" type="audio/mpeg">
-            您的浏览器不支持音频播放。
-        </audio>
-    </div>
-    """
-    st.markdown(GLOBAL_AUDIO_HTML, unsafe_allow_html=True)
+# 用 JS 把原生播放器抓出来固定在右上角，并加上手绘风边框
+AUDIO_FIX_JS = """
+<script>
+(function() {
+    function fixAudio() {
+        const parentDoc = window.parent.document;
+        // 查找 Streamlit 原生音频组件
+        const audioDiv = parentDoc.querySelector('[data-testid="stAudio"]');
+        if (audioDiv && !audioDiv.classList.contains('custom-fixed')) {
+            audioDiv.classList.add('custom-fixed');
+            
+            // 注入手绘风样式
+            audioDiv.style.position = 'fixed';
+            audioDiv.style.top = '20px';
+            audioDiv.style.right = '20px';
+            audioDiv.style.zIndex = '999999';
+            audioDiv.style.backgroundColor = '#ffffff';
+            audioDiv.style.padding = '8px 12px';
+            audioDiv.style.borderRadius = '255px 15px 225px 15px / 15px 225px 15px 255px';
+            audioDiv.style.border = '2px solid #2d2d2d';
+            audioDiv.style.boxShadow = '4px 4px 0px 0px #2d2d2d';
+            audioDiv.style.transform = 'rotate(1deg)';
+            audioDiv.style.width = '260px';
+            
+            // 移动端适配
+            if (window.parent.innerWidth < 768) {
+                audioDiv.style.top = '10px';
+                audioDiv.style.right = '10px';
+                audioDiv.style.transform = 'scale(0.8)';
+                audioDiv.style.transformOrigin = 'top right';
+            }
+        }
+    }
+    
+    // 监听 DOM 变化，确保 Streamlit 切换页面时依然能找到它
+    const observer = new MutationObserver(fixAudio);
+    observer.observe(window.parent.document.body, { childList: true, subtree: true });
+    fixAudio();
+})();
+</script>
+"""
+components.html(AUDIO_FIX_JS, height=0)
 
 
 # ============================================================
@@ -240,7 +253,7 @@ if not st.session_state.opening_played:
 
 
 # ============================================================
-#  🎨 全局样式（替换为日系 Zen Maru Gothic 字体）
+#  🎨 全局样式（日系 Zen Maru Gothic 字体）
 # ============================================================
 GLOBAL_CSS = """
 <style>
@@ -605,7 +618,6 @@ iframe { border: none !important; }
     .row-img img { height: 130px; }
     .timeline-ending-box { padding: 28px 24px; font-size: 1.05rem; margin-top: 40px; }
     .easter-egg-card { padding: 28px 24px; font-size: 1.1rem; }
-    .audio-player-container { top: 10px; right: 10px; transform: scale(0.8); transform-origin: top right; }
 }
 @media (max-width: 450px) { .row-img-grid { grid-template-columns: 1fr; } }
 </style>
