@@ -21,7 +21,7 @@ LETTER = """亲爱的薛女士！
 
 时间过得真快呀，一转眼我们已经认识八年了！从“十二”到“二十”，似乎世界变了很多很多，但你在我眼里永远是那个我刚认识的样子。我的小大人，20岁生日快乐！
 
-这一年快要走到结尾，距离我们上一次见面也已经过去了255天，在线下见不到彼此的日子里，我们面对了很多艰难的时刻，而你更是让我看到了你是一个特别有勇气、特别坚定认准什么事情都会不顾一切去做的女孩；同时随着我们越来越熟悉彼此，你也更愿意对我说曾经习惯于压下去的难过或者焦虑。虽然在某次聊天时说过，但在这里还是还是想和你说，不用因为一些偶尔的难过责怪自己的！
+这一年快要走到结尾，距离我们上一次见面也已经过去了255天，在线下见不到彼此的日子里，我们面对了很多艰难的时刻，而你更是让我看到了你是一个特别有勇气、特别坚定、认准什么事情都会不顾一切去做的女孩；同时随着我们越来越熟悉彼此，你也更愿意对我说曾经习惯于压下去的难过或者焦虑。虽然在某次聊天时说过，但在这里还是还是想和你说，不用因为一些偶尔的难过责怪自己的！
 
 想来也有255天没回家了。虽然我一直一直告诉自己，很多事情我要学会独自面对，但很多时刻我还是会想，要是这时候身边有你该有多好，会不会在找不到小组组队的时候可以有人收留我（x），会不会能有人和我一起去吃饭......好想好想，好想好想你。
 
@@ -612,26 +612,6 @@ iframe { border: none !important; }
     .easter-egg-card { padding: 28px 24px; font-size: 1.1rem; }
 }
 @media (max-width: 450px) { .row-img-grid { grid-template-columns: 1fr; } }
-
-/* Lightbox 遮罩层样式 */
-#lightbox-overlay {
-    display: none;
-    position: fixed;
-    z-index: 9999999;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.85);
-    justify-content: center;
-    align-items: center;
-    cursor: zoom-out;
-    backdrop-filter: blur(5px);
-}
-#lightbox-overlay img {
-    max-width: 90%;
-    max-height: 90%;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    transform: none !important; /* 清除原本的倾斜 */
-}
 </style>
 """
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
@@ -830,23 +810,69 @@ SCROLL_JS = """
 })();
 </script></body></html>"""
 
-# 用于点击图片放大的 Lightbox 脚本
-LIGHTBOX_HTML = """
-<div id="lightbox-overlay">
-    <img id="lightbox-img" src="" alt="Zoomed Image">
-</div>
-<script>
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("zoomable-img")) {
-        const overlay = document.getElementById("lightbox-overlay");
-        const img = document.getElementById("lightbox-img");
-        img.src = e.target.src;
-        overlay.style.display = "flex";
-    } else if (e.target.id === "lightbox-overlay" || e.target.id === "lightbox-img") {
-        document.getElementById("lightbox-overlay").style.display = "none";
+# 独立且安全注入的 Lightbox 代码
+LIGHTBOX_JS = """
+<!DOCTYPE html>
+<html><body><script>
+(function(){
+    const parentDoc = window.parent.document;
+
+    // 1. 注入 CSS 样式
+    if (!parentDoc.getElementById('lightbox-style')) {
+        const style = parentDoc.createElement('style');
+        style.id = 'lightbox-style';
+        style.innerHTML = `
+            #lightbox-overlay {
+                display: none;
+                position: fixed;
+                z-index: 9999999;
+                top: 0; left: 0; width: 100vw; height: 100vh;
+                background: rgba(0, 0, 0, 0.85);
+                justify-content: center;
+                align-items: center;
+                cursor: zoom-out;
+                backdrop-filter: blur(5px);
+            }
+            #lightbox-overlay img {
+                max-width: 90%;
+                max-height: 90%;
+                border-radius: 16px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                transform: none !important; /* 清除倾斜 */
+            }
+        `;
+        parentDoc.head.appendChild(style);
     }
-});
-</script>
+
+    // 2. 注入 HTML 结构
+    if (!parentDoc.getElementById('lightbox-overlay')) {
+        const overlay = parentDoc.createElement('div');
+        overlay.id = 'lightbox-overlay';
+        overlay.innerHTML = '<img id="lightbox-img" src="" alt="Zoomed Image">';
+        parentDoc.body.appendChild(overlay);
+    }
+
+    // 3. 绑定全局点击事件 (事件委托)
+    if (!parentDoc.body.dataset.lightboxBound) {
+        parentDoc.body.dataset.lightboxBound = 'true';
+        parentDoc.body.addEventListener('click', function(e) {
+            if (e.target.classList.contains('zoomable-img')) {
+                const overlay = parentDoc.getElementById('lightbox-overlay');
+                const img = parentDoc.getElementById('lightbox-img');
+                if (overlay && img) {
+                    img.src = e.target.src;
+                    overlay.style.display = 'flex';
+                }
+            } else if (e.target.id === 'lightbox-overlay' || e.target.id === 'lightbox-img') {
+                const overlay = parentDoc.getElementById('lightbox-overlay');
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+            }
+        });
+    }
+})();
+</script></body></html>
 """
 
 
@@ -980,7 +1006,7 @@ elif st.session_state.current_page == "timeline":
 
         # 注入平滑滚动和点击放大脚本
         components.html(SCROLL_JS, height=0)
-        st.markdown(LIGHTBOX_HTML, unsafe_allow_html=True)
+        components.html(LIGHTBOX_JS, height=0)
 
 
 # ============================================================
