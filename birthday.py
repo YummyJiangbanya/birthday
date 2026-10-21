@@ -1,5 +1,3 @@
-这是一个可直接运行的生日祝福网页，包含烟花动画、照片墙、动态信纸和心里话卡片，所有内容都能在代码开头的配置区方便地替换。
-```python
 import streamlit as st
 import streamlit.components.v1 as components
 from pathlib import Path
