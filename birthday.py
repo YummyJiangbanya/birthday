@@ -38,7 +38,6 @@ IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
 PHOTO_ROTATIONS = [-2.2, 1.6, -1.1, 2.0, -1.6, 1.3, -2.0, 2.3]
 
 TIMELINE_XLSX = Path("时间轴照片.xlsx")
-# 注意：这里我们不再指定固定文件夹，代码会自动在所有文件夹里找
 
 # ============================================================
 #  👆 配置区结束
@@ -56,7 +55,7 @@ if "current_page" not in st.session_state:
 
 
 # ============================================================
-#  🎆 全屏开场烟花
+#  🎆 全屏开场烟花 (保持不变)
 # ============================================================
 OPENING_HTML = """<!DOCTYPE html>
 <html><head><style>html,body{margin:0;padding:0;overflow:hidden;}</style></head>
@@ -635,7 +634,7 @@ setInterval(launch, 750);
 
 
 # ============================================================
-#  🛠 工具函数：全自动搜索图片
+#  🛠 工具函数：扫描并解析图片
 # ============================================================
 def _safe_str(v):
     if v is None:
@@ -649,20 +648,18 @@ def _safe_str(v):
 
 
 def load_timeline_steps():
-    """返回 (steps, error_msg)。error_msg 为 None 表示成功。"""
     steps = []
-
     if not TIMELINE_XLSX.exists():
-        return [], f"❌ 找不到 Excel 文件：`{TIMELINE_XLSX.name}`，请确认它是否在根目录。"
+        return [], "❌ 找不到 `时间轴照片.xlsx`，请确认它是否在根目录。"
 
     try:
         df = pd.read_excel(TIMELINE_XLSX, header=None, engine="openpyxl")
     except ImportError:
-        return [], "❌ 缺少 `openpyxl` 依赖。请在 `requirements.txt` 中加入 `openpyxl`，然后重启应用。"
+        return [], "❌ 缺少 `openpyxl` 依赖，请在 `requirements.txt` 中加入 `openpyxl` 并重启应用。"
     except Exception as e:
-        return [], f"❌ 读取 Excel 失败：`{e}`。请确保是标准 .xlsx 文件。"
+        return [], f"❌ 读取 Excel 失败：{e}"
 
-    # 1. 读 Excel 文字
+    # 1. 读 Excel
     current_step = None
     for _, row in df.iterrows():
         cells = list(row)
@@ -677,35 +674,31 @@ def load_timeline_steps():
             }
             steps.append(current_step)
 
+        # 允许只有标题没有文字的 Step 存在（比如 Step4）
         if col_b and current_step is not None:
             current_step["rows"].append({"text": col_b, "images": []})
 
     if not steps:
-        return [], "❌ Excel 读取成功，但 A 列没有解析到任何 Step 标题。请检查 A1 是否写了 `Step1...`。"
+        return [], "❌ Excel 读取成功，但没有读到任何 Step 标题，请检查 A 列。"
 
-    # 2. 全自动搜索图片（遍历当前目录及所有子目录）
-    # 使用 rglob("*") 不管图片在哪里都能找到
+    # 2. 扫描图片（只扫根目录和 photos 目录，避免 rglob 卡顿）
     all_imgs = []
-    try:
-        for p in Path.cwd().rglob("*"):
-            # 过滤掉隐藏文件夹（比如 .git）
-            if ".git" in p.parts: continue
-            if p.is_file() and p.suffix.lower() in IMG_EXTS:
-                all_imgs.append(p)
-    except Exception:
-        pass
-
+    for folder in [Path.cwd(), Path.cwd() / "photos"]:
+        if folder.exists():
+            for p in folder.iterdir():
+                if p.is_file() and p.suffix.lower() in IMG_EXTS:
+                    all_imgs.append(p)
+    
+    # 3. 解析文件名并分配
     img_buckets = {}
     for p in all_imgs:
-        # 匹配 step1-1-1 或 Step1-1-1
-        m = re.match(r'^step(\d+)-(\d+)-(\d+)', p.stem, re.IGNORECASE)
+        m = re.match(r'^step(\d+)-(\d+)-(\d+)', p.stem.strip(), re.IGNORECASE)
         if m:
             s_idx = int(m.group(1)) - 1
             r_idx = int(m.group(2)) - 1
             img_seq = int(m.group(3))
             img_buckets.setdefault((s_idx, r_idx), []).append((img_seq, p))
 
-    # 3. 将图片装入对应位置
     for s_idx, s in enumerate(steps):
         for r_idx, r in enumerate(s["rows"]):
             key = (s_idx, r_idx)
@@ -839,23 +832,33 @@ elif st.session_state.current_page == "timeline":
 
         # 每个 Step 区块
         for i, s in enumerate(steps):
-            rows_html = ""
-            for j, row in enumerate(s["rows"]):
-                text_html = html.escape(row["text"]).replace("\n", "<br>")
-                if row["images"]:
-                    imgs_parts = []
-                    for k, p in enumerate(row["images"]):
-                        rot = PHOTO_ROTATIONS[k % len(PHOTO_ROTATIONS)]
-                        imgs_parts.append(img_to_html(p, rot))
-                    imgs_html = f'<div class="row-img-grid">{"".join(imgs_parts)}</div>'
-                else:
-                    imgs_html = ""
-                rows_html += (
+            # 处理 Step4 这种只有标题没有文字的情况
+            if not s["rows"]:
+                rows_html = (
                     f'<div class="row-block">'
-                    f'<div class="row-text">{text_html}</div>'
-                    f'{imgs_html}'
+                    f'<div class="row-text" style="color:#888; font-style:italic; text-align:center;">'
+                    f'（这里的内容还在准备中……）'
+                    f'</div>'
                     f'</div>'
                 )
+            else:
+                rows_html = ""
+                for j, row in enumerate(s["rows"]):
+                    text_html = html.escape(row["text"]).replace("\n", "<br>")
+                    if row["images"]:
+                        imgs_parts = []
+                        for k, p in enumerate(row["images"]):
+                            rot = PHOTO_ROTATIONS[k % len(PHOTO_ROTATIONS)]
+                            imgs_parts.append(img_to_html(p, rot))
+                        imgs_html = f'<div class="row-img-grid">{"".join(imgs_parts)}</div>'
+                    else:
+                        imgs_html = ""
+                    rows_html += (
+                        f'<div class="row-block">'
+                        f'<div class="row-text">{text_html}</div>'
+                        f'{imgs_html}'
+                        f'</div>'
+                    )
 
             st.markdown(
                 f'<div id="step-{i}" class="step-anchor"></div>'
