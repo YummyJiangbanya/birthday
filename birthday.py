@@ -35,12 +35,13 @@ LETTER = """亲爱的薛女士！
                                                                                                            远在上海的贾女士
 """
 
-THOUGHTS = [
-    ("第一次见面", "还记得我们第一次见面的时候吗？那时候我还不知道，后来会和你变成这么好的朋友。"),
-    ("谢谢你", "谢谢你在我不开心的时候陪我聊天，谢谢你总是记得我随口说过的话。"),
-    ("关于你的好", "你比你自己以为的要好很多很多。别老是否定自己，你真的特别棒。"),
-    ("以后", "以后的每一年生日，我都想陪着你过。这是我们之间的约定。"),
-]
+# 彩蛋文字内容
+EASTER_EGG_TEXT = """
+哈哈哈哈没想到吧！这里还有一个隐藏彩蛋！
+其实准备这个网站的时候，我一直在想还能放点什么。
+如果你能听到这段录音/看到这段视频，那就说明你真的滑到了最后。
+希望下一个八年，我们还能一起走！
+"""
 
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
 PHOTO_ROTATIONS = [-2.2, 1.6, -1.1, 2.0, -1.6, 1.3, -2.0, 2.3]
@@ -204,11 +205,11 @@ if not st.session_state.opening_played:
 
 
 # ============================================================
-#  🎨 全局样式
+#  🎨 全局样式 (所有字体替换为 ZCOOL KuaiLe)
 # ============================================================
 GLOBAL_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
 
 #MainMenu, footer, header {visibility: hidden;}
 [data-testid="stToolbar"] {display: none;}
@@ -222,14 +223,15 @@ GLOBAL_CSS = """
     background-size: 24px 24px, 24px 24px !important;
     background-position: 0 0, 12px 12px !important;
     color: #2d2d2d !important;
-    font-family: 'Patrick Hand', 'Ma Shan Zheng', cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
 }
-html, body, p, div, span, label, .stMarkdown, .stText {
-    font-family: 'Patrick Hand', 'Ma Shan Zheng', cursive !important;
+
+html, body, p, div, span, label, .stMarkdown, .stText, .stButton > button {
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     color: #2d2d2d;
 }
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Kalam', 'Ma Shan Zheng', cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-weight: 700 !important;
     color: #2d2d2d !important;
 }
@@ -238,7 +240,7 @@ h1, h2, h3, h4, h5, h6 {
 /* 顶部导航 */
 .nav-row { display:flex; justify-content:center; gap:14px; margin:0 0 26px 0; flex-wrap:wrap; }
 .stButton > button {
-    font-family: 'Patrick Hand','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.08rem !important;
     background: #ffffff !important;
     color: #2d2d2d !important;
@@ -269,7 +271,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Hero */
 .hero { text-align:center; padding:24px 0 10px; }
 .hero-title {
-    font-family: 'ZCOOL KuaiLe','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: clamp(2.6rem,6.4vw,4.6rem) !important;
     font-weight: 700 !important;
     margin: 0; display: inline-block;
@@ -280,7 +282,7 @@ h1, h2, h3, h4, h5, h6 {
 .hero-title .name, .hero-title .accent { color:#4ea8de !important; }
 .hero-underline { width:82%; max-width:440px; margin:-4px auto 0; display:block; }
 .hero-sub {
-    font-family: 'Patrick Hand','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.25rem;
     color: #2d2d2d;
     margin-top:14px;
@@ -293,7 +295,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Section Title */
 .section-title {
     text-align:center;
-    font-family: 'Kalam','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.7rem; font-weight: 700;
     color: #2d2d2d;
     margin: 14px 0 20px;
@@ -311,7 +313,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 48px 52px 40px;
     box-shadow: 6px 6px 0px 0px #2d2d2d;
     transform: rotate(-0.6deg);
-    font-family: 'Kalam','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.16rem;
     line-height: 2.15;
     color: #2d2d2d;
@@ -334,7 +336,7 @@ h1, h2, h3, h4, h5, h6 {
     to   { opacity:1; transform: rotate(-0.6deg) translateY(0); }
 }
 .envelope-hint {
-    font-family: 'Patrick Hand','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.15rem;
     color: #4ea8de;
     transform: rotate(-1deg);
@@ -375,14 +377,14 @@ h1, h2, h3, h4, h5, h6 {
     text-decoration: none !important;
 }
 .step-nav-num {
-    font-family: 'Kalam','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 0.95rem; font-weight: 700;
     color: #4ea8de;
     letter-spacing: 1px;
     margin-bottom: 4px;
 }
 .step-nav-title {
-    font-family: 'Patrick Hand','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.02rem;
     line-height: 1.5;
     color: #2d2d2d;
@@ -410,7 +412,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 .step-block-title {
-    font-family: 'Kalam','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.55rem;
     font-weight: 700;
     color: #4ea8de;
@@ -436,7 +438,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .row-block:last-child { margin-bottom: 0; }
 .row-text {
-    font-family: 'Patrick Hand','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.1rem;
     line-height: 1.95;
     color: #2d2d2d;
@@ -482,7 +484,7 @@ h1, h2, h3, h4, h5, h6 {
     margin: 60px auto 40px;
     max-width: 800px;
     transform: rotate(0.8deg);
-    font-family: 'Kalam','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.15rem;
     line-height: 2.15;
     color: #2d2d2d;
@@ -502,39 +504,24 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0;
 }
 
-/* 心里话便签 */
-.thought-grid {
-    display: grid; grid-template-columns: 1fr;
-    gap: 26px;
-    max-width: 780px;
-    margin: 10px auto 20px;
-    padding: 0 8px;
-}
-.thought-card {
+/* 彩蛋页（原心里话便签） */
+.easter-egg-card {
     position: relative;
     background: #fff9c4;
     border: 2.5px solid #2d2d2d;
     border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
-    padding: 26px 30px 24px;
+    padding: 36px 42px;
     box-shadow: 4px 4px 0px 0px #2d2d2d;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
     transform: rotate(-0.8deg);
-    font-family: 'Patrick Hand','Ma Shan Zheng',cursive !important;
-    font-size: 1.1rem;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-size: 1.2rem;
     line-height: 1.85;
     color: #2d2d2d;
+    max-width: 780px;
+    margin: 20px auto;
+    text-align: center;
 }
-.thought-card:nth-child(even) {
-    transform: rotate(1deg);
-    background: #ffffff;
-    border-radius: 225px 15px 255px 15px / 15px 255px 15px 225px;
-}
-.thought-card:hover {
-    transform: rotate(0deg) translate(-2px,-2px);
-    box-shadow: 6px 6px 0px 0px #2d2d2d;
-    z-index: 2;
-}
-.thought-card::before {
+.easter-egg-card::before {
     content: ''; position: absolute;
     top: -9px; left: 26px;
     width: 18px; height: 18px;
@@ -543,27 +530,19 @@ h1, h2, h3, h4, h5, h6 {
     border: 1.5px solid #2d2d2d;
     box-shadow: 0 2px 3px rgba(0,0,0,0.35);
 }
-.thought-card:nth-child(even)::before {
-    left: auto; right: 26px;
-    background: radial-gradient(circle at 32% 30%, #6ea3e8 0%, #2d5da1 55%, #163a6d 100%);
-}
-.thought-title {
-    font-family: 'Kalam','Ma Shan Zheng',cursive !important;
-    font-size: 1.3rem;
+.easter-egg-title {
+    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-size: 1.6rem;
     font-weight: 700;
     color: #4ea8de;
-    margin-bottom: 8px;
-    display: inline-block;
-    border-bottom: 2px dashed rgba(45,45,45,0.25);
-    padding-bottom: 2px;
+    margin-bottom: 20px;
 }
-.thought-card:nth-child(even) .thought-title { color:#2d5da1; }
 
 /* iframe / Footer */
 iframe { border: none !important; }
 .footer-note {
     text-align: center;
-    font-family: 'Kalam','Ma Shan Zheng',cursive !important;
+    font-family: 'ZCOOL KuaiLe', cursive !important;
     font-size: 1.14rem;
     color: #2d2d2d;
     padding: 46px 0 70px;
@@ -572,11 +551,21 @@ iframe { border: none !important; }
 }
 .footer-note span { border-bottom: 2px dashed #4ea8de; padding-bottom: 2px; }
 
+/* 自定义音频播放器外观 */
+audio {
+    width: 100%;
+    max-width: 400px;
+    margin-top: 15px;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    border: 2px solid #2d2d2d;
+    box-shadow: 4px 4px 0px 0px #2d2d2d;
+    outline: none;
+}
+
 /* 响应式 */
 @media (max-width: 1000px) { .row-img-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 768px) {
     .letter-card { padding: 32px 24px 28px; font-size: 1.08rem; }
-    .thought-card { padding: 22px 20px; font-size: 1.03rem; }
     .hero-sub { font-size: 1.1rem; }
     .nav-row { gap: 8px; }
     .row-img-grid { grid-template-columns: repeat(2, 1fr); }
@@ -584,6 +573,7 @@ iframe { border: none !important; }
     .row-block { padding: 18px 16px 14px; }
     .row-img img { height: 130px; }
     .timeline-ending-box { padding: 28px 24px; font-size: 1.05rem; margin-top: 40px; }
+    .easter-egg-card { padding: 28px 24px; font-size: 1.1rem; }
 }
 @media (max-width: 450px) { .row-img-grid { grid-template-columns: 1fr; } }
 </style>
@@ -714,7 +704,6 @@ def load_timeline_steps():
             }
             steps.append(current_step)
 
-        # 允许只有标题没有文字的 Step 存在
         if col_b and current_step is not None:
             current_step["rows"].append({"text": col_b, "images": []})
 
@@ -795,7 +784,7 @@ NAV_ITEMS = [
     ("home", "🏠 首页"),
     ("letter", "✉️ 写给你的信"),
     ("timeline", "📸 时间轴"),
-    ("thoughts", "💭 一些心里话"),
+    ("easter_egg", "🎁 彩蛋"), # 修改了这里
 ]
 st.markdown('<div class="nav-row">', unsafe_allow_html=True)
 cols = st.columns(len(NAV_ITEMS))
@@ -924,19 +913,48 @@ elif st.session_state.current_page == "timeline":
 
 
 # ============================================================
-#  💭 心里话页
+#  🎁 彩蛋页 (原心里话)
 # ============================================================
-elif st.session_state.current_page == "thoughts":
-    st.markdown('<div class="section-title">一些<span class="marker">心里话</span></div>', unsafe_allow_html=True)
-    parts = []
-    for title, body in THOUGHTS:
-        parts.append(
-            f'<div class="thought-card">'
-            f'<div class="thought-title">{html.escape(title)}</div>'
-            f'<div>{html.escape(body)}</div>'
-            f'</div>'
-        )
-    st.markdown(f'<div class="thought-grid">{"".join(parts)}</div>', unsafe_allow_html=True)
+elif st.session_state.current_page == "easter_egg":
+    st.markdown('<div class="section-title">隐藏<span class="marker">彩蛋</span></div>', unsafe_allow_html=True)
+    
+    # 1. 彩蛋文字
+    st.markdown(
+        f'<div class="easter-egg-card">'
+        f'<div class="easter-egg-title">✨ 叮咚！发现一个彩蛋 ✨</div>'
+        f'<p>{html.escape(EASTER_EGG_TEXT).replace(chr(10), "<br>")}</p>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("<br><hr style='border:1px dashed #ccc;'>", unsafe_allow_html=True)
+    
+    # 2. 插入视频
+    st.markdown("### 🎬 视频")
+    st.markdown("你可以在这里放一段视频！代码已经写好了，**把 `st.video()` 里的链接换成你的本地视频文件名（如 `video.mp4`）或 B站/YouTube 链接即可**。如果不需要，直接删掉下面这两行代码。")
+    
+    # 这里默认放了一个空视频（你可以替换成你自己的文件）
+    # st.video("your_video.mp4") 
+    # 为了演示，这里放一个占位提示
+    st.info("💡 提示：把代码里的 `st.video(...)` 取消注释，换成你的文件名或链接就能看了。")
+    
+    st.markdown("<br><hr style='border:1px dashed #ccc;'>", unsafe_allow_html=True)
+    
+    # 3. 插入音频
+    st.markdown("### 🎵 录音/音频")
+    st.markdown("出于浏览器安全策略，网页无法**直接自动播放**，但这里给你做了一个**点击播放**的超大按钮！代码已经写好了，**把 `audio.mp3` 换成你上传的录音文件名即可**。如果不需要，直接删掉下面这一段。")
+    
+    # 这里使用 HTML audio 标签，让用户可以点击播放
+    audio_html = """
+    <div style="display: flex; justify-content: center; padding: 20px 0;">
+        <audio controls>
+            <source src="audio.mp3" type="audio/mpeg">
+            您的浏览器不支持音频播放。
+        </audio>
+    </div>
+    """
+    st.markdown(audio_html, unsafe_allow_html=True)
+    st.info("💡 提示：你需要把一段名为 `audio.mp3` 的音频文件上传到 GitHub 仓库的根目录，上面的播放器才会识别并出声哦！")
 
 
 # ============================================================
