@@ -38,7 +38,7 @@ IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
 PHOTO_ROTATIONS = [-2.2, 1.6, -1.1, 2.0, -1.6, 1.3, -2.0, 2.3]
 
 TIMELINE_XLSX = Path("时间轴照片.xlsx")
-TIMELINE_IMG_DIR = Path("photos/timeline")  # 所有图片平铺放在这个文件夹里
+# 注意：这里我们不再指定固定文件夹，代码会自动在所有文件夹里找
 
 # ============================================================
 #  👆 配置区结束
@@ -635,7 +635,7 @@ setInterval(launch, 750);
 
 
 # ============================================================
-#  🛠 工具函数
+#  🛠 工具函数：全自动搜索图片
 # ============================================================
 def _safe_str(v):
     if v is None:
@@ -649,30 +649,20 @@ def _safe_str(v):
 
 
 def load_timeline_steps():
-    """
-    返回：
-    [
-      {
-        "title": "Step1：...",
-        "rows": [
-          {"text": "第1行文字", "images": [Path, Path]},
-          {"text": "第2行文字", "images": [Path, Path]},
-        ],
-        "index": 0
-      },
-      ...
-    ]
-    """
+    """返回 (steps, error_msg)。error_msg 为 None 表示成功。"""
     steps = []
+
     if not TIMELINE_XLSX.exists():
-        return steps
+        return [], f"❌ 找不到 Excel 文件：`{TIMELINE_XLSX.name}`，请确认它是否在根目录。"
 
     try:
         df = pd.read_excel(TIMELINE_XLSX, header=None, engine="openpyxl")
-    except Exception:
-        return steps
+    except ImportError:
+        return [], "❌ 缺少 `openpyxl` 依赖。请在 `requirements.txt` 中加入 `openpyxl`，然后重启应用。"
+    except Exception as e:
+        return [], f"❌ 读取 Excel 失败：`{e}`。请确保是标准 .xlsx 文件。"
 
-    # 1. 读取 Excel 中的标题和文字
+    # 1. 读 Excel 文字
     current_step = None
     for _, row in df.iterrows():
         cells = list(row)
@@ -690,37 +680,40 @@ def load_timeline_steps():
         if col_b and current_step is not None:
             current_step["rows"].append({"text": col_b, "images": []})
 
-    # 2. 遍历 photos/timeline 下的所有图片，根据文件名分类
-    if not TIMELINE_IMG_DIR.exists():
-        return steps
+    if not steps:
+        return [], "❌ Excel 读取成功，但 A 列没有解析到任何 Step 标题。请检查 A1 是否写了 `Step1...`。"
 
-    all_imgs = [p for p in TIMELINE_IMG_DIR.iterdir() if p.suffix.lower() in IMG_EXTS]
-    
-    # 使用字典按 (step_idx, row_idx) 暂存图片和排序序号
+    # 2. 全自动搜索图片（遍历当前目录及所有子目录）
+    # 使用 rglob("*") 不管图片在哪里都能找到
+    all_imgs = []
+    try:
+        for p in Path.cwd().rglob("*"):
+            # 过滤掉隐藏文件夹（比如 .git）
+            if ".git" in p.parts: continue
+            if p.is_file() and p.suffix.lower() in IMG_EXTS:
+                all_imgs.append(p)
+    except Exception:
+        pass
+
     img_buckets = {}
-
     for p in all_imgs:
         # 匹配 step1-1-1 或 Step1-1-1
         m = re.match(r'^step(\d+)-(\d+)-(\d+)', p.stem, re.IGNORECASE)
         if m:
-            s_idx = int(m.group(1)) - 1  # Step 序号 (0-based)
-            r_idx = int(m.group(2)) - 1  # 行号 (0-based)
-            img_seq = int(m.group(3))    # 行内图片序号
+            s_idx = int(m.group(1)) - 1
+            r_idx = int(m.group(2)) - 1
+            img_seq = int(m.group(3))
             img_buckets.setdefault((s_idx, r_idx), []).append((img_seq, p))
-        else:
-            # 不符合命名规则的图片直接忽略，或者你也可以让它默认排在某处
-            pass
 
-    # 3. 将图片装入对应的数据结构
+    # 3. 将图片装入对应位置
     for s_idx, s in enumerate(steps):
         for r_idx, r in enumerate(s["rows"]):
             key = (s_idx, r_idx)
             if key in img_buckets:
-                items = img_buckets[key]
-                items.sort(key=lambda x: x[0])  # 按序号排序
+                items = sorted(img_buckets[key], key=lambda x: x[0])
                 r["images"].extend([p for _, p in items])
 
-    return steps
+    return steps, None
 
 
 def img_to_html(path, rotation):
@@ -827,9 +820,11 @@ elif st.session_state.current_page == "letter":
 elif st.session_state.current_page == "timeline":
     st.markdown('<div class="section-title">我们的<span class="marker">回忆</span></div>', unsafe_allow_html=True)
 
-    steps = load_timeline_steps()
+    steps, err = load_timeline_steps()
 
-    if steps:
+    if err:
+        st.error(err)
+    elif steps:
         # Step 卡片导航
         nav_html = '<div class="step-nav">'
         for i, s in enumerate(steps):
@@ -842,7 +837,7 @@ elif st.session_state.current_page == "timeline":
         nav_html += '</div>'
         st.markdown(nav_html, unsafe_allow_html=True)
 
-        # 每个 Step 的内容区块
+        # 每个 Step 区块
         for i, s in enumerate(steps):
             rows_html = ""
             for j, row in enumerate(s["rows"]):
@@ -872,14 +867,6 @@ elif st.session_state.current_page == "timeline":
             )
 
         components.html(SCROLL_JS, height=0)
-
-    else:
-        st.markdown(
-            '<div style="text-align:center;color:#888;padding:40px 0;">'
-            '（时间轴还没加载出来，请检查 时间轴照片.xlsx 是否在根目录）'
-            '</div>',
-            unsafe_allow_html=True,
-        )
 
 
 # ============================================================
