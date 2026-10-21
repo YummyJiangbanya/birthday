@@ -5,6 +5,7 @@ import base64
 import html
 import re
 import pandas as pd
+import os
 
 # ============================================================
 #  👇 个性化配置区：只改这里
@@ -35,7 +36,6 @@ LETTER = """亲爱的薛女士！
                                                                                                            远在上海的贾女士
 """
 
-# 彩蛋文字内容
 EASTER_EGG_TEXT = """
 哈哈哈哈没想到吧！这里还有一个隐藏彩蛋！
 其实准备这个网站的时候，我一直在想还能放点什么。
@@ -61,6 +61,43 @@ st.set_page_config(
 
 if "current_page" not in st.session_state:
     st.session_state.current_page = "home"
+
+
+# ============================================================
+#  🎵 全局悬浮音频播放器 (所有页面右上角可见)
+# ============================================================
+GLOBAL_AUDIO_HTML = """
+<style>
+.audio-player-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999999;
+    background: #ffffff;
+    padding: 8px 12px;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    border: 2px solid #2d2d2d;
+    box-shadow: 4px 4px 0px 0px #2d2d2d;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: rotate(1deg);
+}
+.audio-player-container audio {
+    height: 36px;
+    outline: none;
+}
+</style>
+<div class="audio-player-container">
+    <span style="font-family:'ZCOOL KuaiLe'; font-size:14px; color:#4ea8de;">🎵 BGM</span>
+    <audio controls loop id="bgm">
+        <source src="audio.mp3" type="audio/mpeg">
+        您的浏览器不支持音频播放。
+    </audio>
+</div>
+"""
+# 注入全局音频播放器
+st.markdown(GLOBAL_AUDIO_HTML, unsafe_allow_html=True)
 
 
 # ============================================================
@@ -205,7 +242,7 @@ if not st.session_state.opening_played:
 
 
 # ============================================================
-#  🎨 全局样式 (所有字体替换为 ZCOOL KuaiLe)
+#  🎨 全局样式
 # ============================================================
 GLOBAL_CSS = """
 <style>
@@ -500,11 +537,9 @@ h1, h2, h3, h4, h5, h6 {
     text-shadow: 2px 2px 0px #2d2d2d;
     -webkit-text-stroke: 1.5px #2d2d2d;
 }
-.timeline-ending-box p {
-    margin-bottom: 0;
-}
+.timeline-ending-box p { margin-bottom: 0; }
 
-/* 彩蛋页（原心里话便签） */
+/* 彩蛋页 */
 .easter-egg-card {
     position: relative;
     background: #fff9c4;
@@ -551,15 +586,10 @@ iframe { border: none !important; }
 }
 .footer-note span { border-bottom: 2px dashed #4ea8de; padding-bottom: 2px; }
 
-/* 自定义音频播放器外观 */
-audio {
-    width: 100%;
-    max-width: 400px;
-    margin-top: 15px;
-    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-    border: 2px solid #2d2d2d;
-    box-shadow: 4px 4px 0px 0px #2d2d2d;
-    outline: none;
+/* 视频/音频 区块样式 */
+.media-container {
+    display: flex; flex-direction: column; align-items: center;
+    margin: 30px 0;
 }
 
 /* 响应式 */
@@ -574,6 +604,7 @@ audio {
     .row-img img { height: 130px; }
     .timeline-ending-box { padding: 28px 24px; font-size: 1.05rem; margin-top: 40px; }
     .easter-egg-card { padding: 28px 24px; font-size: 1.1rem; }
+    .audio-player-container { top: 10px; right: 10px; transform: scale(0.85); }
 }
 @media (max-width: 450px) { .row-img-grid { grid-template-columns: 1fr; } }
 </style>
@@ -689,7 +720,6 @@ def load_timeline_steps():
     except Exception as e:
         return [], f"❌ 读取 Excel 失败：{e}"
 
-    # 1. 读 Excel 文字
     current_step = None
     for _, row in df.iterrows():
         cells = list(row)
@@ -710,7 +740,6 @@ def load_timeline_steps():
     if not steps:
         return [], "❌ Excel 读取成功，但没有读到任何 Step 标题，请检查 A 列。"
 
-    # 2. 扫描图片（根目录及 photos 目录）
     all_imgs = []
     for folder in [Path.cwd(), Path.cwd() / "photos"]:
         if folder.exists():
@@ -718,7 +747,6 @@ def load_timeline_steps():
                 if p.is_file() and p.suffix.lower() in IMG_EXTS:
                     all_imgs.append(p)
     
-    # 3. 解析文件名并分配
     img_buckets = {}
     for p in all_imgs:
         m = re.match(r'^step(\d+)-(\d+)-(\d+)', p.stem.strip(), re.IGNORECASE)
@@ -784,7 +812,7 @@ NAV_ITEMS = [
     ("home", "🏠 首页"),
     ("letter", "✉️ 写给你的信"),
     ("timeline", "📸 时间轴"),
-    ("easter_egg", "🎁 彩蛋"), # 修改了这里
+    ("easter_egg", "🎁 彩蛋"),
 ]
 st.markdown('<div class="nav-row">', unsafe_allow_html=True)
 cols = st.columns(len(NAV_ITEMS))
@@ -833,7 +861,6 @@ elif st.session_state.current_page == "letter":
                 st.session_state.letter_opened = True
                 st.rerun()
     else:
-        # 把换行符转成 <br>，保留自然段的排版
         letter_text = html.escape(LETTER).replace("\n", "<br>")
         st.markdown(f'<div class="letter-wrap"><div class="letter-card">{letter_text}</div></div>', unsafe_allow_html=True)
 
@@ -849,7 +876,6 @@ elif st.session_state.current_page == "timeline":
     if err:
         st.error(err)
     elif steps:
-        # Step 卡片导航
         nav_html = '<div class="step-nav">'
         for i, s in enumerate(steps):
             nav_html += (
@@ -861,7 +887,6 @@ elif st.session_state.current_page == "timeline":
         nav_html += '</div>'
         st.markdown(nav_html, unsafe_allow_html=True)
 
-        # 每个 Step 区块
         for i, s in enumerate(steps):
             if not s["rows"]:
                 rows_html = (
@@ -899,7 +924,6 @@ elif st.session_state.current_page == "timeline":
                 unsafe_allow_html=True,
             )
 
-        # 在时间轴最下方添加的结尾卡片
         ending_text = """亲爱的薛女士，看到这里不知道你会是什么样的心情捏！也许是在回忆一些有趣的瞬间？也许也在惊叹自己的变化和成长？整理完这些照片我真的特别特别感慨！因为我觉得每一个阶段的你都是特别美好和可爱的......你的存在对于我、对于你每个阶段遇见的一部分或者说大部分人而言都是一件特别特别美好的事情！而我也很幸运一路见证了你努力变成越来越好的自己，很幸运我的一些成长也被你见证着，总之总之，好喜欢遇见你后的这些时光，这条时间轴还将继续写下去，还有更多美好的事情等着我们去经历呐！我还要收集你更多美照嘿嘿嘿（那种声音）（喂！！）"""
         
         st.markdown(
@@ -913,7 +937,7 @@ elif st.session_state.current_page == "timeline":
 
 
 # ============================================================
-#  🎁 彩蛋页 (原心里话)
+#  🎁 彩蛋页
 # ============================================================
 elif st.session_state.current_page == "easter_egg":
     st.markdown('<div class="section-title">隐藏<span class="marker">彩蛋</span></div>', unsafe_allow_html=True)
@@ -930,31 +954,11 @@ elif st.session_state.current_page == "easter_egg":
     st.markdown("<br><hr style='border:1px dashed #ccc;'>", unsafe_allow_html=True)
     
     # 2. 插入视频
-    st.markdown("### 🎬 视频")
-    st.markdown("你可以在这里放一段视频！代码已经写好了，**把 `st.video()` 里的链接换成你的本地视频文件名（如 `video.mp4`）或 B站/YouTube 链接即可**。如果不需要，直接删掉下面这两行代码。")
-    
-    # 这里默认放了一个空视频（你可以替换成你自己的文件）
-    # st.video("your_video.mp4") 
-    # 为了演示，这里放一个占位提示
-    st.info("💡 提示：把代码里的 `st.video(...)` 取消注释，换成你的文件名或链接就能看了。")
-    
-    st.markdown("<br><hr style='border:1px dashed #ccc;'>", unsafe_allow_html=True)
-    
-    # 3. 插入音频
-    st.markdown("### 🎵 录音/音频")
-    st.markdown("出于浏览器安全策略，网页无法**直接自动播放**，但这里给你做了一个**点击播放**的超大按钮！代码已经写好了，**把 `audio.mp3` 换成你上传的录音文件名即可**。如果不需要，直接删掉下面这一段。")
-    
-    # 这里使用 HTML audio 标签，让用户可以点击播放
-    audio_html = """
-    <div style="display: flex; justify-content: center; padding: 20px 0;">
-        <audio controls>
-            <source src="audio.mp3" type="audio/mpeg">
-            您的浏览器不支持音频播放。
-        </audio>
-    </div>
-    """
-    st.markdown(audio_html, unsafe_allow_html=True)
-    st.info("💡 提示：你需要把一段名为 `audio.mp3` 的音频文件上传到 GitHub 仓库的根目录，上面的播放器才会识别并出声哦！")
+    st.markdown("<h3 style='text-align:center;'>🎬 视频</h3>", unsafe_allow_html=True)
+    if os.path.exists("video.mp4"):
+        st.video("video.mp4")
+    else:
+        st.info("💡 提示：把名为 `video.mp4` 的视频文件上传到项目根目录，这里就能直接播放啦！")
 
 
 # ============================================================
