@@ -47,6 +47,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# 页面状态初始化
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "home"
+
 
 # ============================================================
 #  🎆 全屏开场烟花（首次进入时播放一次，约 5 秒后淡出）
@@ -58,7 +62,6 @@ OPENING_HTML = """
 <script>
 (function(){
   const parentDoc = window.parent.document;
-  // 防重复
   const old = parentDoc.getElementById('bday-opening');
   if (old) old.remove();
 
@@ -92,14 +95,13 @@ OPENING_HTML = """
   resize();
   window.addEventListener('resize', resize);
 
-  // ---------- 采样文字点 ----------
   function getTextPoints(text){
     const off = parentDoc.createElement('canvas');
     off.width = W; off.height = H;
     const octx = off.getContext('2d');
     const fontSize = Math.min(W * 0.26, H * 0.42);
     octx.fillStyle = '#fff';
-    octx.font = '900 ' + fontSize + "px 'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans SC',sans-serif";
+    octx.font = '900 ' + fontSize + "px 'ZCOOL KuaiLe','PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans SC',sans-serif";
     octx.textAlign = 'center';
     octx.textBaseline = 'middle';
     octx.fillText(text, W / 2, H / 2);
@@ -122,9 +124,8 @@ OPENING_HTML = """
     return pts;
   }
 
-  // ---------- 粒子系统 ----------
-  const particles = [];   // 用于爆炸火花
-  const textParticles = []; // 用于拼字
+  const particles = [];
+  const textParticles = [];
   const gravity = 0.045;
   const friction = 0.982;
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -137,18 +138,13 @@ OPENING_HTML = """
       const a = Math.random() * Math.PI * 2;
       const s = power * Math.pow(Math.random(), 0.55);
       particles.push({
-        x, y,
-        vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s,
-        life: 1,
-        decay: rnd(0.008, 0.02),
-        hue: hue + rnd(-30, 30),
-        size: rnd(1.4, 2.8)
+        x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        life: 1, decay: rnd(0.008, 0.02),
+        hue: hue + rnd(-30, 30), size: rnd(1.4, 2.8)
       });
     }
   }
 
-  // ---------- 时间线 ----------
   const startTs = performance.now();
   let textSpawned = false;
   let fadeStarted = false;
@@ -156,14 +152,11 @@ OPENING_HTML = """
 
   function loop(now){
     const t = (now - startTs) / 1000;
-
-    // 背景
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = 'rgba(13, 10, 32, 0.20)';
     ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
 
-    // ---------- 阶段 1：开场爆炸 ----------
     if (t < 1.6){
       if (!lastBurst || now - lastBurst > 320){
         explode(rnd(W * 0.25, W * 0.75), rnd(H * 0.25, H * 0.45));
@@ -171,12 +164,10 @@ OPENING_HTML = """
       }
     }
 
-    // ---------- 阶段 2：生成目标文字粒子 ----------
     if (!textSpawned && t >= 0.9){
       textSpawned = true;
       const pts = getTextPoints('20岁');
       for (const p of pts){
-        // 初始位置：从屏幕中心附近的爆炸点出发
         const angle = Math.random() * Math.PI * 2;
         const dist  = rnd(0, 120);
         textParticles.push({
@@ -184,16 +175,12 @@ OPENING_HTML = """
           y: H / 2 + Math.sin(angle) * dist,
           vx: Math.cos(angle) * rnd(2, 6),
           vy: Math.sin(angle) * rnd(2, 6),
-          tx: p.x,
-          ty: p.y,
-          hue: rnd(180, 340),
-          size: rnd(1.6, 2.6),
-          born: now
+          tx: p.x, ty: p.y,
+          hue: rnd(180, 340), size: rnd(1.6, 2.6)
         });
       }
     }
 
-    // ---------- 阶段 3：文字粒子被吸向目标 ----------
     for (const p of textParticles){
       p.vx += (p.tx - p.x) * 0.045;
       p.vy += (p.ty - p.y) * 0.045;
@@ -201,27 +188,22 @@ OPENING_HTML = """
       p.vy *= 0.90;
       p.x += p.vx;
       p.y += p.vy;
-
       const flicker = 0.85 + Math.random() * 0.15;
       ctx.beginPath();
       ctx.fillStyle = 'hsla(' + p.hue + ', 100%, 75%, ' + (0.9 * flicker) + ')';
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
-
-      // 拖尾
       ctx.beginPath();
       ctx.fillStyle = 'hsla(' + p.hue + ', 100%, 75%, 0.25)';
       ctx.arc(p.x - p.vx * 2, p.y - p.vy * 2, p.size * 1.5, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // 文字成型后，偶尔再补几发小烟花作为背景
     if (t > 2.2 && t < 4.8 && now - lastBurst > 600){
       explode(rnd(W * 0.15, W * 0.85), rnd(H * 0.15, H * 0.35));
       lastBurst = now;
     }
 
-    // ---------- 普通爆炸粒子更新 ----------
     for (let i = particles.length - 1; i >= 0; i--){
       const p = particles[i];
       p.vx *= friction;
@@ -236,7 +218,6 @@ OPENING_HTML = """
       ctx.fill();
     }
 
-    // ---------- 阶段 4：5 秒后淡出 ----------
     if (!fadeStarted && t >= 5.2){
       fadeStarted = true;
       overlay.style.opacity = '0';
@@ -251,8 +232,6 @@ OPENING_HTML = """
 
     requestAnimationFrame(loop);
   }
-
-  // 等字体加载（系统字体很快）
   requestAnimationFrame(loop);
 })();
 </script>
@@ -267,11 +246,11 @@ if not st.session_state.opening_played:
 
 
 # ============================================================
-#  🎨 全局样式（手绘风）
+#  🎨 全局样式（手绘风 + 清新淡蓝）
 # ============================================================
 GLOBAL_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&family=Ma+Shan+Zheng&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap');
 
 #MainMenu, footer, header {visibility: hidden;}
 [data-testid="stToolbar"] {display: none;}
@@ -300,100 +279,76 @@ h1, h2, h3, h4, h5, h6 {
 
 .block-container {
     max-width: 1100px !important;
-    padding-top: 1.5rem !important;
+    padding-top: 1rem !important;
 }
 
-/* ---------- Hero ---------- */
-.hero { text-align: center; padding: 12px 0 6px; }
-.hero-title {
-    font-family: 'Kalam', 'Ma Shan Zheng', cursive !important;
-    font-size: clamp(2.4rem, 6vw, 4.4rem) !important;
-    font-weight: 700 !important;
-    margin: 0;
-    display: inline-block;
-    transform: rotate(-1.5deg);
-    line-height: 1.2;
-    color: #2d2d2d !important;
-}
-.hero-title .name { color: #2d5da1; }
-.hero-title .accent { color: #ff4d4d; display: inline-block; transform: rotate(1deg); }
-.hero-underline { width: 82%; max-width: 440px; margin: -6px auto 0; display: block; }
-.hero-sub {
-    font-family: 'Patrick Hand', 'Ma Shan Zheng', cursive !important;
-    font-size: 1.25rem;
-    color: #2d2d2d;
-    margin-top: 12px;
-    transform: rotate(0.4deg);
-    display: inline-block;
-    padding: 3px 16px;
-    border-bottom: 2px dashed #2d5da1;
-}
-
-/* ---------- Tabs ---------- */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 16px !important;
-    justify-content: center !important;
-    background: transparent !important;
-    border-bottom: none !important;
-    margin: 14px 0 30px !important;
+/* ---------- 顶部导航栏 ---------- */
+.nav-row {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin: 0 0 26px 0;
     flex-wrap: wrap;
-    padding: 8px 0;
 }
-.stTabs [data-baseweb="tab"] {
+.stButton > button {
     font-family: 'Patrick Hand', 'Ma Shan Zheng', cursive !important;
-    font-size: 1.12rem !important;
+    font-size: 1.08rem !important;
     background: #ffffff !important;
     color: #2d2d2d !important;
     border: 2.5px solid #2d2d2d !important;
     border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
-    padding: 10px 24px !important;
-    box-shadow: 3px 3px 0px 0px #2d2d2d !important;
-    transition: all 0.12s ease !important;
-    height: auto !important;
-}
-.stTabs [data-baseweb="tab"]:hover {
-    background: #e5e0d8 !important;
-    transform: translate(1px, 1px) rotate(-1deg) !important;
-    box-shadow: 2px 2px 0px 0px #2d2d2d !important;
-}
-.stTabs [aria-selected="true"] {
-    background: #ff4d4d !important;
-    color: #ffffff !important;
-    transform: translate(2px, 2px) rotate(-1.5deg) !important;
-    box-shadow: 1px 1px 0px 0px #2d2d2d !important;
-}
-.stTabs [aria-selected="true"] p,
-.stTabs [aria-selected="true"] div { color: #ffffff !important; }
-.stTabs [data-baseweb="tab-highlight"],
-.stTabs [data-baseweb="tab-border"] { display: none !important; }
-.stTabs [data-baseweb="tab-panel"] { padding-top: 6px; }
-
-/* ---------- Button ---------- */
-.stButton > button {
-    font-family: 'Patrick Hand', 'Ma Shan Zheng', cursive !important;
-    font-size: 1.18rem !important;
-    background: #ffffff !important;
-    color: #2d2d2d !important;
-    border: 3px solid #2d2d2d !important;
-    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
     box-shadow: 4px 4px 0px 0px #2d2d2d !important;
-    padding: 12px 28px !important;
+    padding: 10px 18px !important;
     transition: all 0.1s ease !important;
-    min-height: 48px;
+    min-height: 46px;
 }
 .stButton > button:hover {
-    background: #ff4d4d !important;
-    color: #ffffff !important;
+    background: #e8f4fb !important;
+    color: #2d2d2d !important;
     border-color: #2d2d2d !important;
     transform: translate(2px, 2px) rotate(-1deg) !important;
     box-shadow: 2px 2px 0px 0px #2d2d2d !important;
 }
 .stButton > button:active {
-    background: #ff4d4d !important;
+    background: #4ea8de !important;
     color: #ffffff !important;
     transform: translate(4px, 4px) !important;
     box-shadow: 0 0 0 0 #2d2d2d !important;
     border-color: #2d2d2d !important;
+}
+/* 当前激活的导航按钮 */
+.stButton > button[kind="primary"] {
+    background: #4ea8de !important;
+    color: #ffffff !important;
+    border-color: #2d2d2d !important;
+    box-shadow: 2px 2px 0px 0px #2d2d2d !important;
+}
+
+/* ---------- Hero ---------- */
+.hero { text-align: center; padding: 24px 0 10px; }
+.hero-title {
+    font-family: 'ZCOOL KuaiLe', 'Ma Shan Zheng', cursive !important;
+    font-size: clamp(2.6rem, 6.4vw, 4.6rem) !important;
+    font-weight: 700 !important;
+    margin: 0;
+    display: inline-block;
+    transform: rotate(-1.5deg);
+    line-height: 1.25;
+    color: #4ea8de !important;
+}
+.hero-title .name, .hero-title .accent {
+    color: #4ea8de !important;
+}
+.hero-underline { width: 82%; max-width: 440px; margin: -4px auto 0; display: block; }
+.hero-sub {
+    font-family: 'Patrick Hand', 'Ma Shan Zheng', cursive !important;
+    font-size: 1.25rem;
+    color: #2d2d2d;
+    margin-top: 14px;
+    transform: rotate(0.4deg);
+    display: inline-block;
+    padding: 3px 16px;
+    border-bottom: 2px dashed #4ea8de;
 }
 
 /* ---------- Section title ---------- */
@@ -403,10 +358,10 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 1.7rem;
     font-weight: 700;
     color: #2d2d2d;
-    margin: 10px 0 12px;
+    margin: 14px 0 20px;
     display: block;
 }
-.section-title .marker { color: #ff4d4d; }
+.section-title .marker { color: #4ea8de; }
 
 /* ---------- Letter ---------- */
 .letter-wrap { display: flex; justify-content: center; padding: 10px 0 20px; }
@@ -444,7 +399,7 @@ h1, h2, h3, h4, h5, h6 {
 .envelope-hint {
     font-family: 'Patrick Hand', 'Ma Shan Zheng', cursive !important;
     font-size: 1.15rem;
-    color: #2d5da1;
+    color: #4ea8de;
     transform: rotate(-1deg);
     display: inline-block;
     padding: 6px 0;
@@ -543,7 +498,7 @@ h1, h2, h3, h4, h5, h6 {
     font-family: 'Kalam', 'Ma Shan Zheng', cursive !important;
     font-size: 1.3rem;
     font-weight: 700;
-    color: #ff4d4d;
+    color: #4ea8de;
     margin-bottom: 8px;
     display: inline-block;
     border-bottom: 2px dashed rgba(45,45,45,0.25);
@@ -565,7 +520,7 @@ iframe { border: none !important; }
     letter-spacing: 1px;
 }
 .footer-note span {
-    border-bottom: 2px dashed #ff4d4d;
+    border-bottom: 2px dashed #4ea8de;
     padding-bottom: 2px;
 }
 
@@ -584,6 +539,7 @@ iframe { border: none !important; }
     .thought-card { padding: 22px 20px; font-size: 1.03rem; }
     .photo-grid { grid-template-columns: 1fr; gap: 26px; }
     .hero-sub { font-size: 1.1rem; }
+    .nav-row { gap: 8px; }
 }
 </style>
 """
@@ -721,29 +677,6 @@ setInterval(launch, 750);
 
 
 # ============================================================
-#  ✨ Hero 区
-# ============================================================
-st.markdown(f'''
-<div class="hero">
-    <h1 class="hero-title">
-        <span class="name">{html.escape(FRIEND_NAME)}</span>，<span class="accent">生日快乐</span>
-        <span style="display:inline-block;transform:rotate(-14deg);">🎉</span>
-    </h1>
-    <svg class="hero-underline" viewBox="0 0 420 14" preserveAspectRatio="none">
-        <path d="M2,8 Q22,2 42,8 T82,8 T122,8 T162,8 T202,8 T242,8 T282,8 T322,8 T362,8 T402,8"
-              stroke="#ff4d4d" stroke-width="3" fill="none" stroke-linecap="round"/>
-    </svg>
-    <div><span class="hero-sub">{html.escape(SUB_TITLE)} ✨</span></div>
-</div>
-''', unsafe_allow_html=True)
-
-# ============================================================
-#  🎆 顶部画框烟花
-# ============================================================
-components.html(FIREWORKS_HTML, height=440, scrolling=False)
-
-
-# ============================================================
 #  📷 照片 base64 渲染
 # ============================================================
 def photo_to_html(path, caption, rotation):
@@ -762,12 +695,52 @@ def photo_to_html(path, caption, rotation):
 
 
 # ============================================================
-#  🗂️ Tabs
+#  🧭 顶部导航（四个可交互方块）
 # ============================================================
-tab1, tab2, tab3 = st.tabs(["✉️  写给你的信", "📸  我们的照片", "💭  一些心里话"])
+NAV_ITEMS = [
+    ("home", "🏠 首页"),
+    ("letter", "✉️ 写给你的信"),
+    ("photos", "📸 我们的照片"),
+    ("thoughts", "💭 一些心里话"),
+]
 
-# --- 信 ---
-with tab1:
+st.markdown('<div class="nav-row">', unsafe_allow_html=True)
+cols = st.columns(len(NAV_ITEMS))
+for i, (key, label) in enumerate(NAV_ITEMS):
+    with cols[i]:
+        is_active = (st.session_state.current_page == key)
+        if st.button(label, key=f"nav_{key}", use_container_width=True, type="primary" if is_active else "secondary"):
+            if st.session_state.current_page != key:
+                st.session_state.current_page = key
+                st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ============================================================
+#  🏠 首页：Hero + 画框烟花
+# ============================================================
+if st.session_state.current_page == "home":
+    st.markdown(f'''
+    <div class="hero">
+        <h1 class="hero-title">
+            <span class="name">{html.escape(FRIEND_NAME)}</span>，<span class="accent">生日快乐</span>
+            <span style="display:inline-block;transform:rotate(-14deg);">🎉</span>
+        </h1>
+        <svg class="hero-underline" viewBox="0 0 420 14" preserveAspectRatio="none">
+            <path d="M2,8 Q22,2 42,8 T82,8 T122,8 T162,8 T202,8 T242,8 T282,8 T322,8 T362,8 T402,8"
+                  stroke="#4ea8de" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div><span class="hero-sub">{html.escape(SUB_TITLE)} ✨</span></div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    components.html(FIREWORKS_HTML, height=440, scrolling=False)
+
+
+# ============================================================
+#  ✉️ 信件页
+# ============================================================
+elif st.session_state.current_page == "letter":
     st.markdown(
         '<div class="section-title">一封<span class="marker">手写</span>的信</div>',
         unsafe_allow_html=True,
@@ -792,8 +765,11 @@ with tab1:
             unsafe_allow_html=True,
         )
 
-# --- 照片 ---
-with tab2:
+
+# ============================================================
+#  📸 照片页
+# ============================================================
+elif st.session_state.current_page == "photos":
     st.markdown(
         '<div class="section-title">我们的<span class="marker">回忆</span></div>',
         unsafe_allow_html=True,
@@ -812,8 +788,11 @@ with tab2:
             parts.append(photo_to_html(f, caption, rot))
         st.markdown(f'<div class="photo-grid">{"".join(parts)}</div>', unsafe_allow_html=True)
 
-# --- 心里话 ---
-with tab3:
+
+# ============================================================
+#  💭 心里话页
+# ============================================================
+elif st.session_state.current_page == "thoughts":
     st.markdown(
         '<div class="section-title">一些<span class="marker">心里话</span></div>',
         unsafe_allow_html=True,
@@ -827,6 +806,7 @@ with tab3:
             f'</div>'
         )
     st.markdown(f'<div class="thought-grid">{"".join(parts)}</div>', unsafe_allow_html=True)
+
 
 # ============================================================
 #  🎁 Footer
