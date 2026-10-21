@@ -36,12 +36,8 @@ LETTER = """亲爱的薛女士！
                                                                                                            远在上海的贾女士
 """
 
-EASTER_EGG_TEXT = """
-哈哈哈哈没想到吧！这里还有一个隐藏彩蛋！
-其实准备这个网站的时候，我一直在想还能放点什么。
-如果你能听到这段录音/看到这段视频，那就说明你真的滑到了最后。
-希望下一个八年，我们还能一起走！
-"""
+# 修改后的彩蛋文字
+EASTER_EGG_TEXT = "哈哈哈哈没想到吧！这里还有一个彩蛋！接受我的雷霆一击吧！！！"
 
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
 PHOTO_ROTATIONS = [-2.2, 1.6, -1.1, 2.0, -1.6, 1.3, -2.0, 2.3]
@@ -64,40 +60,41 @@ if "current_page" not in st.session_state:
 
 
 # ============================================================
-#  🎵 全局悬浮音频播放器 (所有页面右上角可见)
+#  🎵 全局悬浮音频播放器（转Base64修复无法播放问题）
 # ============================================================
-GLOBAL_AUDIO_HTML = """
-<style>
-.audio-player-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 999999;
-    background: #ffffff;
-    padding: 8px 12px;
-    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-    border: 2px solid #2d2d2d;
-    box-shadow: 4px 4px 0px 0px #2d2d2d;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transform: rotate(1deg);
-}
-.audio-player-container audio {
-    height: 36px;
-    outline: none;
-}
-</style>
-<div class="audio-player-container">
-    <span style="font-family:'ZCOOL KuaiLe'; font-size:14px; color:#4ea8de;">🎵 BGM</span>
-    <audio controls loop id="bgm">
-        <source src="audio.mp3" type="audio/mpeg">
-        您的浏览器不支持音频播放。
-    </audio>
-</div>
-"""
-# 注入全局音频播放器
-st.markdown(GLOBAL_AUDIO_HTML, unsafe_allow_html=True)
+def get_audio_base64():
+    audio_path = Path("audio.mp3")
+    if audio_path.exists():
+        with open(audio_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return ""
+
+AUDIO_B64 = get_audio_base64()
+
+if AUDIO_B64:
+    GLOBAL_AUDIO_HTML = f"""
+    <style>
+    .audio-player-container {{
+        position: fixed; top: 20px; right: 20px; z-index: 999999;
+        background: #ffffff; padding: 8px 12px;
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        border: 2px solid #2d2d2d; box-shadow: 4px 4px 0px 0px #2d2d2d;
+        display: flex; align-items: center; gap: 10px; transform: rotate(1deg);
+    }}
+    .audio-player-container audio {{ height: 36px; outline: none; }}
+    @media (max-width: 768px) {{
+        .audio-player-container {{ top: 10px; right: 10px; transform: scale(0.8); transform-origin: top right; }}
+    }}
+    </style>
+    <div class="audio-player-container">
+        <span style="font-family:'Zen Maru Gothic', sans-serif; font-size:14px; color:#4ea8de; font-weight:bold;">🎵 BGM</span>
+        <audio controls loop id="bgm">
+            <source src="data:audio/mp3;base64,{AUDIO_B64}" type="audio/mpeg">
+            您的浏览器不支持音频播放。
+        </audio>
+    </div>
+    """
+    st.markdown(GLOBAL_AUDIO_HTML, unsafe_allow_html=True)
 
 
 # ============================================================
@@ -135,6 +132,7 @@ OPENING_HTML = """<!DOCTYPE html>
     const octx = off.getContext('2d');
     const fontSize = Math.min(W*0.26, H*0.42);
     octx.fillStyle = '#fff';
+    // 烟花字体保持 ZCOOL KuaiLe 不变
     octx.font = '900 ' + fontSize + "px 'ZCOOL KuaiLe','PingFang SC','Microsoft YaHei',sans-serif";
     octx.textAlign = 'center'; octx.textBaseline = 'middle';
     octx.fillText(text, W/2, H/2);
@@ -242,11 +240,11 @@ if not st.session_state.opening_played:
 
 
 # ============================================================
-#  🎨 全局样式
+#  🎨 全局样式（替换为日系 Zen Maru Gothic 字体）
 # ============================================================
 GLOBAL_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
 
 #MainMenu, footer, header {visibility: hidden;}
 [data-testid="stToolbar"] {display: none;}
@@ -260,15 +258,15 @@ GLOBAL_CSS = """
     background-size: 24px 24px, 24px 24px !important;
     background-position: 0 0, 12px 12px !important;
     color: #2d2d2d !important;
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
 }
 
 html, body, p, div, span, label, .stMarkdown, .stText, .stButton > button {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     color: #2d2d2d;
 }
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-weight: 700 !important;
     color: #2d2d2d !important;
 }
@@ -277,8 +275,9 @@ h1, h2, h3, h4, h5, h6 {
 /* 顶部导航 */
 .nav-row { display:flex; justify-content:center; gap:14px; margin:0 0 26px 0; flex-wrap:wrap; }
 .stButton > button {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.08rem !important;
+    font-weight: 700 !important;
     background: #ffffff !important;
     color: #2d2d2d !important;
     border: 2.5px solid #2d2d2d !important;
@@ -308,7 +307,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Hero */
 .hero { text-align:center; padding:24px 0 10px; }
 .hero-title {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: clamp(2.6rem,6.4vw,4.6rem) !important;
     font-weight: 700 !important;
     margin: 0; display: inline-block;
@@ -319,8 +318,9 @@ h1, h2, h3, h4, h5, h6 {
 .hero-title .name, .hero-title .accent { color:#4ea8de !important; }
 .hero-underline { width:82%; max-width:440px; margin:-4px auto 0; display:block; }
 .hero-sub {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.25rem;
+    font-weight: bold;
     color: #2d2d2d;
     margin-top:14px;
     transform: rotate(0.4deg);
@@ -332,7 +332,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Section Title */
 .section-title {
     text-align:center;
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.7rem; font-weight: 700;
     color: #2d2d2d;
     margin: 14px 0 20px;
@@ -350,7 +350,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 48px 52px 40px;
     box-shadow: 6px 6px 0px 0px #2d2d2d;
     transform: rotate(-0.6deg);
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.16rem;
     line-height: 2.15;
     color: #2d2d2d;
@@ -373,9 +373,10 @@ h1, h2, h3, h4, h5, h6 {
     to   { opacity:1; transform: rotate(-0.6deg) translateY(0); }
 }
 .envelope-hint {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.15rem;
     color: #4ea8de;
+    font-weight: bold;
     transform: rotate(-1deg);
     display: inline-block;
     padding: 6px 0;
@@ -414,14 +415,14 @@ h1, h2, h3, h4, h5, h6 {
     text-decoration: none !important;
 }
 .step-nav-num {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 0.95rem; font-weight: 700;
     color: #4ea8de;
     letter-spacing: 1px;
     margin-bottom: 4px;
 }
 .step-nav-title {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.02rem;
     line-height: 1.5;
     color: #2d2d2d;
@@ -449,7 +450,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 .step-block-title {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.55rem;
     font-weight: 700;
     color: #4ea8de;
@@ -475,7 +476,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .row-block:last-child { margin-bottom: 0; }
 .row-text {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.1rem;
     line-height: 1.95;
     color: #2d2d2d;
@@ -521,7 +522,7 @@ h1, h2, h3, h4, h5, h6 {
     margin: 60px auto 40px;
     max-width: 800px;
     transform: rotate(0.8deg);
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.15rem;
     line-height: 2.15;
     color: #2d2d2d;
@@ -548,7 +549,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 36px 42px;
     box-shadow: 4px 4px 0px 0px #2d2d2d;
     transform: rotate(-0.8deg);
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.2rem;
     line-height: 1.85;
     color: #2d2d2d;
@@ -566,7 +567,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 2px 3px rgba(0,0,0,0.35);
 }
 .easter-egg-title {
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.6rem;
     font-weight: 700;
     color: #4ea8de;
@@ -577,7 +578,7 @@ h1, h2, h3, h4, h5, h6 {
 iframe { border: none !important; }
 .footer-note {
     text-align: center;
-    font-family: 'ZCOOL KuaiLe', cursive !important;
+    font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif !important;
     font-size: 1.14rem;
     color: #2d2d2d;
     padding: 46px 0 70px;
@@ -604,7 +605,7 @@ iframe { border: none !important; }
     .row-img img { height: 130px; }
     .timeline-ending-box { padding: 28px 24px; font-size: 1.05rem; margin-top: 40px; }
     .easter-egg-card { padding: 28px 24px; font-size: 1.1rem; }
-    .audio-player-container { top: 10px; right: 10px; transform: scale(0.85); }
+    .audio-player-container { top: 10px; right: 10px; transform: scale(0.8); transform-origin: top right; }
 }
 @media (max-width: 450px) { .row-img-grid { grid-template-columns: 1fr; } }
 </style>
