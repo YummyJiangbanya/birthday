@@ -62,22 +62,17 @@ if "current_page" not in st.session_state:
 # ============================================================
 #  🎵 全局悬浮音频播放器（原生播放 + JS 固定定位）
 # ============================================================
-# 先渲染一个原生的 st.audio，前端加载后 JS 会将其固定到右上角
 if os.path.exists("audio.mp3"):
     st.audio("audio.mp3", format="audio/mpeg", loop=True)
 
-# 用 JS 把原生播放器抓出来固定在右上角，并加上手绘风边框
 AUDIO_FIX_JS = """
 <script>
 (function() {
     function fixAudio() {
         const parentDoc = window.parent.document;
-        // 查找 Streamlit 原生音频组件
         const audioDiv = parentDoc.querySelector('[data-testid="stAudio"]');
         if (audioDiv && !audioDiv.classList.contains('custom-fixed')) {
             audioDiv.classList.add('custom-fixed');
-            
-            // 注入手绘风样式
             audioDiv.style.position = 'fixed';
             audioDiv.style.top = '20px';
             audioDiv.style.right = '20px';
@@ -90,7 +85,6 @@ AUDIO_FIX_JS = """
             audioDiv.style.transform = 'rotate(1deg)';
             audioDiv.style.width = '260px';
             
-            // 移动端适配
             if (window.parent.innerWidth < 768) {
                 audioDiv.style.top = '10px';
                 audioDiv.style.right = '10px';
@@ -99,8 +93,6 @@ AUDIO_FIX_JS = """
             }
         }
     }
-    
-    // 监听 DOM 变化，确保 Streamlit 切换页面时依然能找到它
     const observer = new MutationObserver(fixAudio);
     observer.observe(window.parent.document.body, { childList: true, subtree: true });
     fixAudio();
@@ -145,7 +137,6 @@ OPENING_HTML = """<!DOCTYPE html>
     const octx = off.getContext('2d');
     const fontSize = Math.min(W*0.26, H*0.42);
     octx.fillStyle = '#fff';
-    // 烟花字体保持 ZCOOL KuaiLe 不变
     octx.font = '900 ' + fontSize + "px 'ZCOOL KuaiLe','PingFang SC','Microsoft YaHei',sans-serif";
     octx.textAlign = 'center'; octx.textBaseline = 'middle';
     octx.fillText(text, W/2, H/2);
@@ -522,6 +513,7 @@ h1, h2, h3, h4, h5, h6 {
     display: block;
     border: 1px solid #2d2d2d;
     background: #e5e0d8;
+    cursor: zoom-in; /* 鼠标放上去变成放大镜 */
 }
 
 /* 时间轴结尾彩蛋 */
@@ -620,6 +612,26 @@ iframe { border: none !important; }
     .easter-egg-card { padding: 28px 24px; font-size: 1.1rem; }
 }
 @media (max-width: 450px) { .row-img-grid { grid-template-columns: 1fr; } }
+
+/* Lightbox 遮罩层样式 */
+#lightbox-overlay {
+    display: none;
+    position: fixed;
+    z-index: 9999999;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    justify-content: center;
+    align-items: center;
+    cursor: zoom-out;
+    backdrop-filter: blur(5px);
+}
+#lightbox-overlay img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transform: none !important; /* 清除原本的倾斜 */
+}
 </style>
 """
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
@@ -788,9 +800,10 @@ def img_to_html(path, rotation):
     suffix = path.suffix.lower().lstrip(".")
     if suffix == "jpg":
         suffix = "jpeg"
+    # 注意：这里添加了 class="zoomable-img" 以供 JS 抓取
     return (
         f'<div class="row-img" style="transform: rotate({rotation}deg);">'
-        f'<img src="data:image/{suffix};base64,{data}" alt="" />'
+        f'<img class="zoomable-img" src="data:image/{suffix};base64,{data}" alt="" />'
         f'</div>'
     )
 
@@ -816,6 +829,25 @@ SCROLL_JS = """
   bind();
 })();
 </script></body></html>"""
+
+# 用于点击图片放大的 Lightbox 脚本
+LIGHTBOX_HTML = """
+<div id="lightbox-overlay">
+    <img id="lightbox-img" src="" alt="Zoomed Image">
+</div>
+<script>
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("zoomable-img")) {
+        const overlay = document.getElementById("lightbox-overlay");
+        const img = document.getElementById("lightbox-img");
+        img.src = e.target.src;
+        overlay.style.display = "flex";
+    } else if (e.target.id === "lightbox-overlay" || e.target.id === "lightbox-img") {
+        document.getElementById("lightbox-overlay").style.display = "none";
+    }
+});
+</script>
+"""
 
 
 # ============================================================
@@ -946,7 +978,9 @@ elif st.session_state.current_page == "timeline":
             unsafe_allow_html=True
         )
 
+        # 注入平滑滚动和点击放大脚本
         components.html(SCROLL_JS, height=0)
+        st.markdown(LIGHTBOX_HTML, unsafe_allow_html=True)
 
 
 # ============================================================
