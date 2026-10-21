@@ -14,17 +14,25 @@ FRIEND_NAME = "薛女士"
 SENDER_NAME = "贾女士"
 SUB_TITLE = "祝你轻盈地迈入一个又一个春天"
 
-LETTER = """亲爱的薛女士：
+LETTER = """亲爱的薛女士！
 
-生日快乐！
+恭喜你迈入了崭新的20岁！
 
-认识你是一件很幸运的事情。这一年里，我们一起……
+时间过得真快呀，一转眼我们已经认识八年了！从“十二”到“二十”，似乎世界变了很多很多，但你在我眼里永远是那个我刚认识的样子。我的小大人，20岁生日快乐！
 
-希望你新的一岁里，每天都开心，想要的都能得到，想去的都能去到。
+这一年快要走到结尾，距离我们上一次见面也已经过去了255天，在线下见不到彼此的日子里，我们面对了很多艰难的时刻，而你更是让我看到了你是一个特别有勇气、特别坚定、认准什么事情都会不顾一切去做的女孩；同时随着我们越来越熟悉彼此，你也更愿意对我说曾经习惯于压下去的难过或者焦虑。虽然在某次聊天时说过，但在这里还是还是想和你说，不用因为一些偶尔的难过责怪自己的！
 
-无论什么时候，需要我的时候，我一直都在。
+想来也有255天没回家了。虽然我一直一直告诉自己，很多事情我要学会独自面对，但很多时刻我还是会想，要是这时候身边有你该有多好，会不会在找不到小组组队的时候可以有人收留我（x），会不会能有人和我一起去吃饭......好想好想，好想好想你。
 
-                                        —— 贾女士
+我知道你其实看到我的一些外露的情绪会很担心又怕会让我伤心什么的......我其实真的真的不会觉得你说什么会让我难过！老朋老友的（不是）！我知道你是想要关心我，我知道你爱我（x），有的时候我们是会有点像疯狂动物城（？）我的意思是我真的特别特别珍惜和感动你愿意接纳我很多很多的不足qwq。我总是说我是一个太敏感也太多情绪的人，也让你作为朋友承担了很多我的情绪带来的压力，但其实我也有好多好多开心的、有趣的（以及八卦的）事情想和你讲，却总是习惯性路径依赖地讲了很多抱怨qwq，所以何时啊何时能见面这下子真得聊他个昏天黑地了（不是）！
+
+怎么在祝你生日快乐的信里写了很多我的事啊喂在干嘛！！！！（跑走）
+
+其实真的很不好意思这一个月过得又忙又迷糊，已经有点蟪蛄不知春秋了......这样重要的日子居然这样匆忙准备！下午那会儿我想了又想有没有什么办法可以不需要邮寄又有新意还能传达大量爱意（咳咳）呢？这时候组长在群里发了条消息，我突然想到我是不是可以把学到的这个东西用上！我要做一个专属于你的20岁的网站！这里有我的心里话，有美好的回忆，有远隔千里但顺着网线近在咫尺的我们，嘿嘿！比较匆忙也不太精致，（模仿某人的语气）不许嫌弃喂！（）
+
+亲爱的薛女士，感谢你看到这里(づ￣3￣)づ╭❤～，碎碎念了很多很多总之总之还是希望你天天开心天天幸福！也希望你往后精彩的人生我能继续狠狠参与（入室抢劫中...）！
+
+                                                                                                           远在上海的贾女士
 """
 
 THOUGHTS = [
@@ -55,7 +63,7 @@ if "current_page" not in st.session_state:
 
 
 # ============================================================
-#  🎆 全屏开场烟花 (保持不变)
+#  🎆 全屏开场烟花
 # ============================================================
 OPENING_HTML = """<!DOCTYPE html>
 <html><head><style>html,body{margin:0;padding:0;overflow:hidden;}</style></head>
@@ -463,6 +471,37 @@ h1, h2, h3, h4, h5, h6 {
     background: #e5e0d8;
 }
 
+/* 时间轴结尾彩蛋 */
+.timeline-ending-box {
+    position: relative;
+    background: #ffffff;
+    border: 3px solid #2d2d2d;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    box-shadow: 6px 6px 0px 0px #2d2d2d;
+    padding: 36px 42px;
+    margin: 60px auto 40px;
+    max-width: 800px;
+    transform: rotate(0.8deg);
+    font-family: 'Kalam','Ma Shan Zheng',cursive !important;
+    font-size: 1.15rem;
+    line-height: 2.15;
+    color: #2d2d2d;
+    animation: fadeUp 0.8s ease both;
+}
+.timeline-ending-box::before {
+    content: '❤';
+    position: absolute;
+    top: -20px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 32px;
+    color: #ff4d4d;
+    text-shadow: 2px 2px 0px #2d2d2d;
+    -webkit-text-stroke: 1.5px #2d2d2d;
+}
+.timeline-ending-box p {
+    margin-bottom: 0;
+}
+
 /* 心里话便签 */
 .thought-grid {
     display: grid; grid-template-columns: 1fr;
@@ -544,6 +583,7 @@ iframe { border: none !important; }
     .step-block { padding: 28px 20px 22px; }
     .row-block { padding: 18px 16px 14px; }
     .row-img img { height: 130px; }
+    .timeline-ending-box { padding: 28px 24px; font-size: 1.05rem; margin-top: 40px; }
 }
 @media (max-width: 450px) { .row-img-grid { grid-template-columns: 1fr; } }
 </style>
@@ -659,7 +699,7 @@ def load_timeline_steps():
     except Exception as e:
         return [], f"❌ 读取 Excel 失败：{e}"
 
-    # 1. 读 Excel
+    # 1. 读 Excel 文字
     current_step = None
     for _, row in df.iterrows():
         cells = list(row)
@@ -674,14 +714,14 @@ def load_timeline_steps():
             }
             steps.append(current_step)
 
-        # 允许只有标题没有文字的 Step 存在（比如 Step4）
+        # 允许只有标题没有文字的 Step 存在
         if col_b and current_step is not None:
             current_step["rows"].append({"text": col_b, "images": []})
 
     if not steps:
         return [], "❌ Excel 读取成功，但没有读到任何 Step 标题，请检查 A 列。"
 
-    # 2. 扫描图片（只扫根目录和 photos 目录，避免 rglob 卡顿）
+    # 2. 扫描图片（根目录及 photos 目录）
     all_imgs = []
     for folder in [Path.cwd(), Path.cwd() / "photos"]:
         if folder.exists():
@@ -793,9 +833,9 @@ if st.session_state.current_page == "home":
 #  ✉️ 信件页
 # ============================================================
 elif st.session_state.current_page == "letter":
-    st.markdown('<div class="section-title">一封<span class="marker">手写</span>的信</div>', unsafe_allow_html=True)
     if "letter_opened" not in st.session_state:
         st.session_state.letter_opened = False
+        
     if not st.session_state.letter_opened:
         st.markdown('<div style="text-align:center;"><span class="envelope-hint">点击下面的按钮，拆开这封信 ✉️</span></div>', unsafe_allow_html=True)
         c1, c2, c3 = st.columns([1, 2, 1])
@@ -804,7 +844,9 @@ elif st.session_state.current_page == "letter":
                 st.session_state.letter_opened = True
                 st.rerun()
     else:
-        st.markdown(f'<div class="letter-wrap"><div class="letter-card">{html.escape(LETTER)}</div></div>', unsafe_allow_html=True)
+        # 把换行符转成 <br>，保留自然段的排版
+        letter_text = html.escape(LETTER).replace("\n", "<br>")
+        st.markdown(f'<div class="letter-wrap"><div class="letter-card">{letter_text}</div></div>', unsafe_allow_html=True)
 
 
 # ============================================================
@@ -832,7 +874,6 @@ elif st.session_state.current_page == "timeline":
 
         # 每个 Step 区块
         for i, s in enumerate(steps):
-            # 处理 Step4 这种只有标题没有文字的情况
             if not s["rows"]:
                 rows_html = (
                     f'<div class="row-block">'
@@ -868,6 +909,16 @@ elif st.session_state.current_page == "timeline":
                 f'</div>',
                 unsafe_allow_html=True,
             )
+
+        # 在时间轴最下方添加的结尾卡片
+        ending_text = """亲爱的薛女士，看到这里不知道你会是什么样的心情捏！也许是在回忆一些有趣的瞬间？也许也在惊叹自己的变化和成长？整理完这些照片我真的特别特别感慨！因为我觉得每一个阶段的你都是特别美好和可爱的......你的存在对于我、对于你每个阶段遇见的一部分或者说大部分人而言都是一件特别特别美好的事情！而我也很幸运一路见证了你努力变成越来越好的自己，很幸运我的一些成长也被你见证着，总之总之，好喜欢遇见你后的这些时光，这条时间轴还将继续写下去，还有更多美好的事情等着我们去经历呐！我还要收集你更多美照嘿嘿嘿（那种声音）（喂！！）"""
+        
+        st.markdown(
+            f'<div class="timeline-ending-box">'
+            f'<p>{html.escape(ending_text).replace(chr(10), "<br>")}</p>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
 
         components.html(SCROLL_JS, height=0)
 
